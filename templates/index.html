@@ -1,0 +1,25 @@
+{% extends "bootstrap/base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block styles %}
+{{super()}}
+    <link rel="stylesheet" href="{{url_for('.static', filename='css/style.css')}}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row-fluid">
+        <div class="jumbotron">
+            <div class="container text-center">
+	    	<a href="/"><img src="static/images/art.jpg"></a>
+		<h1><strong>INSERT CODE</strong></h1>
+		<form class="form" role="form" action="" method="POST">
+			{{ form.hidden_tag() }}
+			{{ wtf.form_field(form.code) }}
+			<p><button type="submit" class="btn btn-default" value="name">Submit</button></p>
+		</form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
