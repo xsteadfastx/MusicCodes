@@ -19,4 +19,5 @@ Usage:
 ```
 
 ## Todo ##
-The `voucher` function is missing. Its planned to generade a PDF with the download-code-vouchers.
+- `add` to create new download codes
+- The `voucher` function is missing. Its planned to generade a PDF with the download-code-vouchers.
