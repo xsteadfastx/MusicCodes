@@ -19,13 +19,12 @@ Options:
     voucher <from> <to>         Creates a voucher PDF with a range of codes.
     reset <code>                Resets the USED counter for a specific code.
 '''
-import hashlib
 import sqlite3
 import os
 import subprocess
 import shutil
 import jinja2
-from base64 import b64encode
+import random
 from docopt import docopt
 from flask import Flask, render_template, redirect, send_from_directory
 from flask_wtf import Form
@@ -54,7 +53,7 @@ def create():
         USED            INT);''')
 
     for i in range(int(arguments['<number>'])):
-        code = b64encode(os.urandom(6)).decode('utf-8')
+        code = '%08x' % (random.getrandbits(32))
         print('insert ' + code)
         conn.execute('''INSERT INTO CODES (CODE, USED) \
                 VALUES (?, ?)''', (code, 0))
@@ -67,7 +66,7 @@ def add():
     conn = sqlite3.connect(DB)
 
     for i in range(int(arguments['<number>'])):
-        code = b64encode(os.urandom(6)).decode('utf-8')
+        code = '%08x' % (random.getrandbits(32))
         print('insert ' + code)
         conn.execute('''INSERT INTO CODES (CODE, USED) \
                 VALUES (?, ?)''', (code, 0))
@@ -121,12 +120,12 @@ def voucher():
 
     if not os.path.isdir('voucher'):
         os.mkdir('voucher')
-    with open('voucher/voucher.tex', 'w') as f:
+    with open('voucher/voucher_a8.tex', 'w') as f:
         f.write(template.render(code_list=code_list, url=URL))
 
     shutil.copyfile('templates/voucher_a4.tex', 'voucher/voucher_a4.tex')
     os.chdir('voucher')
-    proc = subprocess.Popen(['pdflatex', 'voucher.tex'])
+    proc = subprocess.Popen(['pdflatex', 'voucher_a8.tex'])
     proc.wait()
     proc = subprocess.Popen(['pdflatex', 'voucher_a4.tex'])
     proc.wait()
