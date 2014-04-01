@@ -4,12 +4,27 @@ Usage:
     MusicCodes.py create <number>
     MusicCodes.py add <number>
     MusicCodes.py show
+    MusicCodes.py voucher --all
     MusicCodes.py voucher <from> <to>
     MusicCodes.py reset <code>
+    MusicCodes.py -h | --help
+
+Options:
+    -h --help                   Show this screen.
+    run                         Starts MusicCodes Web.
+    create <number>             Creates DB with number of codes.
+    add <number>                Adds number of codes to existing DB.
+    show                        Show all DB entries.
+    voucher --all               Creates a voucher PDF with all codes.
+    voucher <from> <to>         Creates a voucher PDF with a range of codes.
+    reset <code>                Resets the USED counter for a specific code.
 '''
 import hashlib
 import sqlite3
 import os
+import subprocess
+import shutil
+import jinja2
 from base64 import b64encode
 from docopt import docopt
 from flask import Flask, render_template, redirect, send_from_directory
@@ -19,6 +34,7 @@ from wtforms.validators import Required
 from flask_bootstrap import Bootstrap
 
 
+URL = 'http://downloads.xsteadfastx.org'
 FILE_TO_SEND = 'foo.txt'
 DB = 'test.db'
 
@@ -38,8 +54,8 @@ def create():
     for i in range(int(arguments['<number>'])):
         code = b64encode(os.urandom(6)).decode('utf-8')
         print('insert ' + code)
-        conn.execute('INSERT INTO CODES (CODE, USED) \
-                VALUES (?, ?)', (code, 0))
+        conn.execute('''INSERT INTO CODES (CODE, USED) \
+                VALUES (?, ?)''', (code, 0))
 
     conn.commit()
     conn.close()
@@ -60,6 +76,46 @@ def reset():
     cur.execute('''UPDATE CODES SET USED = 0 WHERE CODE = ?''',
         (arguments['<code>'], ))
     conn.commit()
+    conn.close()
+
+
+def voucher():
+    letter_renderer = jinja2.Environment(
+        block_start_string = '%{',
+        block_end_string = '%}',
+        variable_start_string = '%{{',
+        variable_end_string = '%}}',
+        loader = jinja2.FileSystemLoader(os.path.abspath('templates')))
+
+    template = letter_renderer.get_template('voucher_a8.tex')
+
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+    if arguments['--all']:
+        cur.execute('''SELECT * FROM CODES''')
+    else:
+        from_id = int(arguments['<from>']) - 1
+        to_id = int(arguments['<to>']) + 1
+
+        cur.execute('''SELECT * FROM CODES where ID > ? AND ID < ?''',
+                    (from_id, to_id))
+
+    code_list = []
+    for i in cur.fetchall():
+        code_list.append(i[1])
+
+    if not os.path.isdir('voucher'):
+        os.mkdir('voucher')
+    with open('voucher/voucher.tex', 'w') as f:
+        f.write(template.render(code_list=code_list, url=URL))
+
+    shutil.copyfile('templates/voucher_a4.tex', 'voucher/voucher_a4.tex')
+    os.chdir('voucher')
+    proc = subprocess.Popen(['pdflatex', 'voucher.tex'])
+    proc.wait()
+    proc = subprocess.Popen(['pdflatex', 'voucher_a4.tex'])
+    proc.wait()
+
     conn.close()
 
 
@@ -112,3 +168,5 @@ if __name__ == '__main__':
         show()
     elif arguments['reset']:
         reset()
+    elif arguments['voucher']:
+        voucher()
