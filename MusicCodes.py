@@ -36,7 +36,9 @@ from flask_bootstrap import Bootstrap
 
 URL = 'http://downloads.xsteadfastx.org'
 FILE_TO_SEND = 'foo.txt'
-DB = 'test.db'
+ALLOWED_DOWNLOADS = 3
+
+DB = 'musiccodes.db'
 
 
 app = Flask(__name__)
@@ -140,7 +142,7 @@ def code(voucher_code):
         (voucher_code, ))
     entry = cur.fetchall()
     if len(entry) > 0:
-        if entry[0][2] == 3:
+        if entry[0][2] == ALLOWED_DOWNLOADS:
             conn.close()
             error = 'ALL CODES USED'
             return render_template('code.html', error=error)
