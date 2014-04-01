@@ -63,6 +63,19 @@ def create():
     conn.close()
 
 
+def add():
+    conn = sqlite3.connect(DB)
+
+    for i in range(int(arguments['<number>'])):
+        code = b64encode(os.urandom(6)).decode('utf-8')
+        print('insert ' + code)
+        conn.execute('''INSERT INTO CODES (CODE, USED) \
+                VALUES (?, ?)''', (code, 0))
+
+    conn.commit()
+    conn.close()
+
+
 def show():
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
@@ -76,18 +89,18 @@ def reset():
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
     cur.execute('''UPDATE CODES SET USED = 0 WHERE CODE = ?''',
-        (arguments['<code>'], ))
+                (arguments['<code>'], ))
     conn.commit()
     conn.close()
 
 
 def voucher():
     letter_renderer = jinja2.Environment(
-        block_start_string = '%{',
-        block_end_string = '%}',
-        variable_start_string = '%{{',
-        variable_end_string = '%}}',
-        loader = jinja2.FileSystemLoader(os.path.abspath('templates')))
+        block_start_string='%{',
+        block_end_string='%}',
+        variable_start_string='%{{',
+        variable_end_string='%}}',
+        loader=jinja2.FileSystemLoader(os.path.abspath('templates')))
 
     template = letter_renderer.get_template('voucher_a8.tex')
 
@@ -139,7 +152,7 @@ def code(voucher_code):
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
     cur.execute('''SELECT * FROM CODES WHERE CODE = ?''',
-        (voucher_code, ))
+                (voucher_code, ))
     entry = cur.fetchall()
     if len(entry) > 0:
         if entry[0][2] == ALLOWED_DOWNLOADS:
@@ -148,8 +161,8 @@ def code(voucher_code):
             return render_template('code.html', error=error)
         else:
             count = entry[0][2] + 1
-            cur.execute('''UPDATE CODES SET USED = ? WHERE CODE = ?''', (count,
-                voucher_code))
+            cur.execute('''UPDATE CODES SET USED = ? WHERE CODE = ?''',
+                        (count, voucher_code))
             conn.commit()
             conn.close()
             return send_from_directory('.', FILE_TO_SEND)
@@ -172,3 +185,5 @@ if __name__ == '__main__':
         reset()
     elif arguments['voucher']:
         voucher()
+    elif arguments['add']:
+        add()

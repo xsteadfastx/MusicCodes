@@ -31,6 +31,3 @@ Options:
 
 ### voucher ###
 For using the voucher option you need to have latex installed. Needs `latexpdf`.
-
-## Todo ##
-- `add` to create new download codes
